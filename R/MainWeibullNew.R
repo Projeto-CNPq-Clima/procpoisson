@@ -5,7 +5,7 @@
 #'
 #' Esta é a função para realizar o algoritmo Monte Carlo via Cadeias de Markov para os parâmetros de um processo de Poisson.
 #'
-#' @param data Matriz de dados simulados de um processo de Hawkes
+#' @param data Matriz de dados simulados de um processo de Poisson
 #' @param sites Malha de pontos
 #' @param iter número inteiro positivo, interações do algoritmo MCMC
 #' @param bar número inteiro positivo, período de burn-in do algoritmo MCMC
@@ -107,12 +107,12 @@ for(j in 1:iter){
 
     varPsi=solve(solve(B)+t(X)%*%solve(gSigma(bw,vw,sites))%*%X)
     medPsi=(t(A)%*%solve(B)+t(W)%*%solve(gSigma(bw,vw,sites))%*%X)%*%varPsi
-    Psi=as.matrix(mvrnorm(1,medPsi,varPsi))
+    Psi=as.matrix(MASS::mvrnorm(1,medPsi,varPsi))
 
 
     varBeta=solve(solve(B)+t(Z)%*%solve(gSigma(bm,vm,sites))%*%Z)
     medBeta=(t(A)%*%solve(B)+t(M)%*%solve(gSigma(bm,vm,sites))%*%Z)%*%varBeta
-    Beta=as.matrix(mvrnorm(1,medBeta,varBeta))
+    Beta=as.matrix(MASS::mvrnorm(1,medBeta,varBeta))
 
     temp=amostrarb(W,vw,bw,sites,c3,d3,X,Psi,SU3)
     bw=temp[[1]]
@@ -167,12 +167,12 @@ for(j in 1:iter){
 
     varPsi=solve(solve(B)+t(X)%*%solve(gSigma(bw,vw,sites))%*%X)
     medPsi=(t(A)%*%solve(B)+t(W)%*%solve(gSigma(bw,vw,sites))%*%X)%*%varPsi
-    Psi=as.matrix(mvrnorm(1,medPsi,varPsi))
+    Psi=as.matrix(MASS::mvrnorm(1,medPsi,varPsi))
     MPsi=rbind(MPsi,t(Psi))
 
     varBeta=solve(solve(B)+t(Z)%*%solve(gSigma(bm,vm,sites))%*%Z)
     medBeta=(t(A)%*%solve(B)+t(M)%*%solve(gSigma(bm,vm,sites))%*%Z)%*%varBeta
-    Beta=as.matrix(mvrnorm(1,medBeta,varBeta))
+    Beta=as.matrix(MASS::mvrnorm(1,medBeta,varBeta))
     MBeta=rbind(MBeta,t(Beta))
 
     temp=amostrarb(W,vw,bw,sites,c3,d3,X,Psi,SU3)

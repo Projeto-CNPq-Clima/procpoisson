@@ -87,7 +87,7 @@ sintonizarN=function(bar,taxa,tau,mat,i){
 amostrarW=function(WW,MM,S,XX,PPs,bb,vv,nn,TT,ff){
 
   n=nrow(WW)
-  WWprop=as.matrix(mvrnorm(1,WW,ff*diag(1,n)))
+  WWprop=as.matrix(MASS::mvrnorm(1,WW,ff*diag(1,n)))
 
 
   SSig=gSigma(bb,vv,S)
@@ -127,7 +127,7 @@ amostrarW=function(WW,MM,S,XX,PPs,bb,vv,nn,TT,ff){
 amostrarM=function(WW,MM,S,ZZ,BBta,bb,vv,data,nn,TT,ff){
 
   n=nrow(MM)
-  MMprop=as.matrix(mvrnorm(1,MM,ff*diag(1,n)))
+  MMprop=as.matrix(MASS::mvrnorm(1,MM,ff*diag(1,n)))
   logdata=log(data)
   SSig=gSigma(bb,vv,S)
 
@@ -236,7 +236,7 @@ logverosa=function(MM,WW,ddelta,ttheta,yT,TT,f){
 amostrarWsa=function(ddelta,ttheta,WW,MM,loca,XX,PPs,bb,vv,nn,TT,yT,ff,f){
 
   n=nrow(WW)
-  WWprop=as.matrix(mvrnorm(1,WW,ff*diag(1,n)))
+  WWprop=as.matrix(MASS::mvrnorm(1,WW,ff*diag(1,n)))
 
   tema1=ifelse( ( exp(WWprop+MM)*t(TT)^(exp(MM)-1) )<=(2*pi*f*ddelta),1,0)
   tema2=ifelse( ( exp(WWprop+MM)*(yT[1,])^(exp(MM)-1) )<=(2*pi*f*ddelta),1,0)
@@ -287,7 +287,7 @@ amostrarWsa=function(ddelta,ttheta,WW,MM,loca,XX,PPs,bb,vv,nn,TT,yT,ff,f){
 amostrarMsa=function(ddelta,ttheta,WW,MM,loca,XX,PPs,bb,vv,nn,TT,yT,ff,f){
 
   n=nrow(MM)
-  MMprop=as.matrix(mvrnorm(1,MM,ff*diag(1,n)))
+  MMprop=as.matrix(MASS::mvrnorm(1,MM,ff*diag(1,n)))
 
   tema1=ifelse( ( exp(WW+MMprop)*t(TT)^(exp(MMprop)-1) )<=(2*pi*f*ddelta),1,0)
   tema2=ifelse( (exp(WW+MMprop)*(yT[1,])^(exp(MMprop)-1) )<=(2*pi*f*ddelta),1,0)
