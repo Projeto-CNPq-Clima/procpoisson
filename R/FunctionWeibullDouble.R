@@ -462,3 +462,190 @@ amostrarf=function(ttheta,ddelta,WW,MM,yT,nn,TT,u1,a,b,f){
 #amostrarf(theta,delta,W,M,data,nj,Tt,0.001,1/(365+10),1/(365-10),f)
 
 
+##Amostrador de gamma-beta MH
+amostrargama<-function(ggama,eeta,x,ZZ,MM,NNj,Tt,nnj,A,B,ff)
+  #######################################
+{
+
+  n=ncol(x)
+
+  ggamaprop=as.matrix(MASS::mvrnorm(1,ggama,ff*solve(t(ZZ)%*%ZZ)))
+  tempbeta=exp(ZZ%*%ggama)
+  tempbetaprop=exp(ZZ%*%ggamaprop)
+  tempalpha=exp(MM%*%eeta)
+
+  xptalpha=x
+  xproptalpha=x
+
+  TTalpha=Tt
+
+  for(j in 1:n){
+    xptalpha[,j]=tempbeta[j,1]*(x[,j]^tempalpha[j,1])	#dados elevados a alpha
+    xproptalpha[,j]=tempbetaprop[j,1]*(x[,j]^tempalpha[j,1])
+    TTalpha[j,1]=TTalpha[j,1]^tempalpha[j,1]
+  }
+
+
+  pgama=sum((ZZ%*%ggama)*as.matrix(nnj))-sum(xptalpha,na.rm=T)-sum(t(NNj)*tempbeta*TTalpha)-0.5*t(ggama-A)%*%solve(B)%*%(ggama-A)
+  pgamaprop=sum((ZZ%*%ggamaprop)*as.matrix(nnj))-sum(xproptalpha,na.rm=T)-sum(t(NNj)*tempbetaprop*TTalpha)-0.5*t(ggamaprop-A)%*%solve(B)%*%(ggamaprop-A)
+
+
+  logprob=pgamaprop-pgama
+
+  probac<-min(c(1,exp(logprob)))
+
+  u<-runif(1)
+
+  if(u<probac){
+    res=ggamaprop
+    rejei=1
+
+
+  }
+  else{
+    res=ggama
+    rejei=0
+  }
+
+  res=list(res,rejei)
+  res
+
+}
+##Amostrador de eta MH
+amostrareta<-function(ggama,eeta,x,ZZ,MM,NNj,Tt,nnj,A,B,ff)
+  #######################################
+{
+
+  n=ncol(x)
+
+  eetaprop=as.matrix(MASS::mvrnorm(1,eeta,ff*solve(t(MM)%*%MM)))
+
+  tempbeta=exp(ZZ%*%ggama)
+  tempalphaprop=exp(MM%*%eetaprop)
+  tempalpha=exp(MM%*%eeta)
+
+  xptalpha=x
+  xproptalpha=x
+
+  xp=x
+  xprop=x
+
+  TTalpha=Tt
+  TTalphaprop=Tt
+
+  for(j in 1:n){
+    xp[,j]=x[,j]^tempalpha[j,1]
+    xprop[,j]=x[,j]^tempalphaprop[j,1]
+    xptalpha[,j]=tempbeta[j,1]*(x[,j]^tempalpha[j,1])	#dados elevados a alpha
+    xproptalpha[,j]=tempbeta[j,1]*(x[,j]^tempalphaprop[j,1])
+    TTalpha[j,1]=TTalpha[j,1]^tempalpha[j,1]
+    TTalphaprop[j,1]=TTalphaprop[j,1]^tempalphaprop[j,1]
+
+  }
+
+
+  peta=sum((MM%*%eeta)*as.matrix(nnj))-sum(xptalpha,na.rm=T)-sum(t(NNj)*tempbeta*TTalpha)-0.5*t(eeta-A)%*%solve(B)%*%(eeta-A)+sum(log(xp),na.rm=T)
+  petaprop=sum((MM%*%eetaprop)*as.matrix(nnj))-sum(xproptalpha,na.rm=T)-sum(t(NNj)*tempbeta*TTalphaprop)-0.5*t(eetaprop-A)%*%solve(B)%*%(eetaprop-A)+sum(log(xprop),na.rm=T)
+
+
+  logprob=petaprop-peta
+
+  probac=min(c(1,exp(logprob)))
+
+  u=runif(1)
+
+  if(u<probac){
+    res=eetaprop
+    rejei=1
+
+
+  }
+  else{
+    res=eeta
+    rejei=0
+  }
+
+  res=list(res,rejei)
+  res
+
+
+}
+
+#################################################################################################3
+amostrarWgoel=function(W,loca,X,Psi,b,v,nj,N,u1){
+
+  n=nrow(W)
+  Wprop=MASS::mvrnorm(1,W,u1*diag(1,n))
+  SSig=gSigma(b,v,loca)
+
+  postW=sum(as.matrix(nj)*W)-sum(exp(W))+sum(t(N)*W)-0.5*t(W-X%*%Psi)%*%solve(SSig)%*%(W-X%*%Psi)
+  postWprop=sum(as.matrix(nj)*Wprop)-sum(exp(Wprop))+sum(t(N)*Wprop)-0.5*t(Wprop-X%*%Psi)%*%solve(SSig)%*%(Wprop-X%*%Psi)
+
+  prob=min(exp((postWprop)-(postW)),1)
+
+
+  u=runif(1,0,1)
+
+  if(u<prob){
+
+    Wprox=Wprop
+
+    rejei=1
+
+
+  }else{
+
+    Wprox=W
+    rejei=0
+  }
+
+
+
+
+
+  res=as.matrix(Wprox)
+  res=list(Wprox,rejei)
+  res
+
+}
+###################################################################3
+amostrarPsi=function(W,X,Psi,V,M,u1,loca){
+
+  n=nrow(Psi)
+  Psiprop=MASS::mvrnorm(1,Psi,u1*solve(t(X)%*%X))
+  SSig=gSigma(b,v,loca)
+
+  postPsi=-0.5*t(Psi-M)%*%solve(V)%*%(Psi-M)-0.5*t(W-X%*%Psi)%*%solve(SSig)%*%(W-X%*%Psi)
+
+  postPsiprop=-0.5*t(Psiprop-M)%*%solve(V)%*%(Psiprop-M)-0.5*t(W-X%*%Psiprop)%*%solve(SSig)%*%(W-X%*%Psiprop)
+
+
+  prob=min(exp((postPsiprop)-(postPsi)),1)
+
+
+  u=runif(1,0,1)
+
+  if(u<prob){
+
+    Psiprox=Psiprop
+
+    rejei=1
+
+  }else{
+
+    Psiprox=Psi
+    rejei=0
+  }
+
+
+
+
+
+  res=as.matrix(Psiprox)
+  res=list(res,rejei)
+  res
+
+}
+
+
+
