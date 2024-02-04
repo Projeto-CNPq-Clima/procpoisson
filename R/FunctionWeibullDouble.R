@@ -1,12 +1,12 @@
+library(MASS)
 ######################################################
 gCorr<-function(b,def){
   n=nrow(def)
   R=exp(-b*(as.matrix(dist(def))))
   mat=R
   mat
-
-
 }
+
 ######################################################
 gSigma<-function(b,v,def){
   n<-nrow(def)
@@ -387,7 +387,7 @@ amostrardelta=function(ttheta,ddelta,WW,MM,yT,nn,TT,u1,f,d){
 amostrartheta=function(ttheta,ddelta,WW,MM,yT,nn,TT,u1,f){
 
 
-  thetaprop=runif(1,max(0,ttheta-u1),min(theta+u1,2*pi))
+  thetaprop=runif(1,max(0,ttheta-u1),min(ttheta+u1,2*pi))
 
   logp=logverosa(MM,WW,ddelta,ttheta,yT,TT,f)-0.5*(log(ttheta)+log(2*pi-ttheta))
 
@@ -420,6 +420,7 @@ amostrartheta=function(ttheta,ddelta,WW,MM,yT,nn,TT,u1,f){
   res
 
 }
+
 
 #amostrartheta(theta,delta,W,M,data,nj,Tt,0.01,f)
 ########################################################################
@@ -462,8 +463,10 @@ amostrarf=function(ttheta,ddelta,WW,MM,yT,nn,TT,u1,a,b,f){
 #amostrarf(theta,delta,W,M,data,nj,Tt,0.001,1/(365+10),1/(365-10),f)
 
 
+
+
 ##Amostrador de gamma-beta MH
-amostrargama<-function(ggama,eeta,x,ZZ,MM,NNj,Tt,nnj,A,B,ff)
+amostrargamaGOEL<-function(ggama,eeta,x,ZZ,MM,NNj,Tt,nnj,A,B,ff)
   #######################################
 {
 
@@ -512,7 +515,7 @@ amostrargama<-function(ggama,eeta,x,ZZ,MM,NNj,Tt,nnj,A,B,ff)
 
 }
 ##Amostrador de eta MH
-amostrareta<-function(ggama,eeta,x,ZZ,MM,NNj,Tt,nnj,A,B,ff)
+amostraretaGOEL<-function(ggama,eeta,x,ZZ,MM,NNj,Tt,nnj,A,B,ff)
   #######################################
 {
 
@@ -609,7 +612,7 @@ amostrarWgoel=function(W,loca,X,Psi,b,v,nj,N,u1){
 
 }
 ###################################################################3
-amostrarPsi=function(W,X,Psi,V,M,u1,loca){
+amostrarPsiGOEL=function(W,X,Psi,V,M,u1,loca){
 
   n=nrow(Psi)
   Psiprop=MASS::mvrnorm(1,Psi,u1*solve(t(X)%*%X))
@@ -649,3 +652,802 @@ amostrarPsi=function(W,X,Psi,V,M,u1,loca){
 
 
 
+#########################MUSA ###################
+
+#########################################################################3
+# Comparar valor com elementos de vetor
+localizMUSA=function(vetor,valor){
+
+  vet=as.matrix(vetor)
+  n=nrow(vet)
+
+  for(j in 1:n){
+
+    if(vet[j,1]==valor){
+      return(j)
+    }
+
+  }
+
+
+}
+########################################
+sintonizarMUSA=function(bar,taxa,tau,mat,i){
+
+  mat=as.matrix(mat)
+  temp1=seq(50,bar,50)
+  temp2=temp1-49
+  temp3=ifelse(temp1==i,1,0)
+
+
+  if(sum(temp3)==1){
+
+    indi=localizMUSA(temp1,i)
+    mater=(1/50)*sum(mat[temp2[indi]:temp1[indi],1])
+    if(mater>=taxa){
+      delta=min(0.01,(indi+1)^(-0.5))
+      temp4=log(tau)-delta
+      temp5=exp(temp4)
+      return(temp5)
+    }else{
+      delta=min(0.01,(indi+1)^(-0.5))
+      temp4=log(tau)+delta
+      temp5=exp(temp4)
+      return(temp5)
+    }
+
+  }else{
+
+    return(tau)
+
+  }
+
+
+}
+####################################################################################
+sintonizarNMUSA=function(bar,taxa,tau,mat,i){
+
+  mat=as.matrix(mat)
+  temp1=seq(50,bar,50)
+  temp2=temp1-49
+  temp3=ifelse(temp1==i,1,0)
+
+
+  if(sum(temp3)==1){
+
+    indi=localizMUSA(temp1,i)
+    mater=(1/50)*sum(mat[temp2[indi]:temp1[indi],1])
+    if(mater>=taxa){
+      delta=min(0.01,(indi+1)^(-0.5))
+      temp4=log(tau)+delta
+      temp5=exp(temp4)
+      return(temp5)
+    }else{
+      delta=min(0.01,(indi+1)^(-0.5))
+      temp4=log(tau)-delta
+      temp5=exp(temp4)
+      return(temp5)
+    }
+
+  }else{
+
+    return(tau)
+
+  }
+
+
+}
+
+####################################################################################
+##Amostrador de alpha MH
+amostraralphaMUSA<-function(alpha,W,Tt,c1,d1,x,ff)
+  #######################################
+{
+
+  n=ncol(x)
+
+  alphaprop<-rgamma(1,alpha*ff, rate=ff)
+
+
+
+  palpha=(c1-1)*log(alpha)-d1*alpha-sum(exp(W)*log(1+Tt/alpha))-sum(log(x+alpha),na.rm = T)
+
+  palphaprop=(c1-1)*log(alphaprop)-d1*alphaprop-sum(exp(W)*log(1+Tt/alphaprop))-sum(log(x+alphaprop),na.rm = T)
+
+  logprob<-palphaprop+log(dgamma(alpha,alphaprop*ff, rate=ff))-(palpha + log(dgamma(alphaprop,alpha*ff, rate=ff)))
+
+  probac<-min(c(1,exp(logprob)))
+
+  u<-runif(1)
+
+  if(u<probac){
+    res<-alphaprop
+    rejei=1
+
+
+  }
+  else{
+    res<-alpha
+    rejei=0
+  }
+
+  res=list(res,rejei)
+  res
+
+}
+
+#################################################################################################3
+amostrarWMUSA=function(W,loca,X,Psi,b,v,nj,u1,alpha){
+
+  n=nrow(W)
+  Wprop=MASS::mvrnorm(1,W,u1*diag(1,n))
+  SSig=gSigma(b,v,loca)
+
+  postW=sum(as.matrix(nj)*W)-sum( exp(W)*log(1+Tt/alpha) )-0.5*t(W-X%*%Psi)%*%solve(SSig)%*%(W-X%*%Psi)
+  postWprop=sum(as.matrix(nj)*Wprop)-sum( exp(Wprop)*log(1+Tt/alpha) )-0.5*t(Wprop-X%*%Psi)%*%solve(SSig)%*%(Wprop-X%*%Psi)
+  prob=min(exp((postWprop)-(postW)),1)
+
+
+  u=runif(1,0,1)
+
+  if(u<prob){
+
+    Wprox=Wprop
+
+    rejei=1
+
+
+  }else{
+
+    Wprox=W
+    rejei=0
+  }
+
+
+
+
+
+  res=as.matrix(Wprox)
+  res=list(Wprox,rejei)
+  res
+
+}
+
+#################################################################################################3
+amostrarWsaMUSA=function(aalpha,WW,ddelta,ttheta,data,TT,ff,loca,X,Psi,b,v,u1){
+
+  Wprop=as.matrix(MASS::mvrnorm(1,WW,u1*diag(1,n)))
+
+  tema=exp(Wprop)/(aalpha+TT)
+  tema=ifelse(tema<=(ddelta*2*pi*ff),1,0)
+
+
+  if(sum(tema)>=1){
+    return(list(WW,0))
+  }else{
+
+  }
+
+
+
+  SSig=gSigma(b,v,loca)
+
+  postW=logverosaMUSA(aalpha,WW,ddelta,ttheta,data,TT,ff)-0.5*t(WW-X%*%Psi)%*%solve(SSig)%*%(WW-X%*%Psi)
+  postWprop=logverosaMUSA(aalpha,Wprop,ddelta,ttheta,data,TT,ff)-0.5*t(Wprop-X%*%Psi)%*%solve(SSig)%*%(Wprop-X%*%Psi)
+  prob=min(exp((postWprop)-(postW)),1)
+
+
+  u=runif(1,0,1)
+
+  if(u<prob){
+
+    Wprox=Wprop
+
+    rejei=1
+
+
+  }else{
+
+    Wprox=WW
+    rejei=0
+  }
+
+
+
+
+
+  res=as.matrix(Wprox)
+  res=list(Wprox,rejei)
+  res
+
+}
+
+####################################################
+logveroMUSA=function(aalpha,WW,data,Nn,TT){
+
+  res=sum(Nn*WW)-sum(log(aalpha+data),na.rm=T)-sum(exp(WW)*log(1+TT/aalpha))
+  res
+
+}
+################
+logverosaMUSA=function(aalpha,WW,ddelta,ttheta,data,TT,ff){
+
+  soma=0
+  for(j in 1:ncol(data)){
+    temp1=sum(log(exp(WW[j,1])/(data[,j]+aalpha)-ddelta*2*pi*ff*sin(2*pi*ff*data[,j]+ttheta)),na.rm = T)
+    soma=soma+temp1
+  }
+
+  res=soma+sum(-( exp(WW)*log(1+TT/aalpha)+ddelta*cos(2*pi*ff*TT+ttheta) ) )
+  res
+}
+####################################################
+DICMMUSA=function(malpha,mw,tt,nn,yT){
+
+  alpham=mean(malpha)
+  wm=as.matrix(apply(mw,2,mean))
+  hacDic=-2*logveroMUSA(alpham,wm,yT,nn,tt)
+
+  aux=NULL
+  for(i in 1:length(malpha)){
+    Dici=-2*logveroMUSA(malpha[i],as.matrix(mw[i,]),yT,nn,tt)
+    aux=c(aux,Dici)
+  }
+  pd=mean(aux)-hacDic
+  Dicr=hacDic+2*pd
+  Dicr
+}
+#DICM(Malpha,MW,Tt,nj,data)
+##############################################
+amostraralphasaMUSA=function(aalpha,WW,TT,ttheta,ddelta,c1,d1,data,ff,u1){
+
+
+  alphaprop<-rgamma(1,aalpha*u1, rate=u1)
+
+  tema=exp(WW)/(alphaprop+TT)
+  tema=ifelse(tema<=(ddelta*2*pi*ff),1,0)
+
+
+  if(sum(tema)>=1){
+    return(list(aalpha,0))
+  }else{
+
+  }
+
+
+  palpha=(c1-1)*log(aalpha)-d1*aalpha + logverosaMUSA(aalpha,WW,ddelta,ttheta,data,TT,ff)
+
+  palphaprop=(c1-1)*log(alphaprop)-d1*alphaprop + logverosaMUSA(alphaprop,WW,ddelta,ttheta,data,TT,ff)
+
+  logprob<-palphaprop+log(dgamma(aalpha,alphaprop*u1, rate=u1))-(palpha + log(dgamma(alphaprop,aalpha*u1, rate=u1)))
+
+  probac<-min(c(1,exp(logprob)))
+
+  u<-runif(1)
+
+  if(u<probac){
+    res<-alphaprop
+    rejei=1
+
+
+  }
+  else{
+    res<-aalpha
+    rejei=0
+  }
+
+  res=list(res,rejei)
+  res
+
+
+
+}
+
+#############################################################
+amostrardeltaMUSA=function(ttheta,ddelta,WW,aalpha,yT,nn,TT,u1,f,d){
+
+
+  deltaprop=runif(1,max(0,ddelta-u1),min(ddelta+u1,d))
+
+  tema=exp(WW)/(aalpha+TT)
+  tema=ifelse(tema<=(deltaprop*2*pi*f),1,0)
+
+
+  if(sum(tema)>=1){
+    return(list(ddelta,0))
+  }else{
+
+  }
+
+
+  logp=logverosaMUSA(aalpha,WW,ddelta,ttheta,yT,TT,f)-0.5*(log(ddelta)+log(d-ddelta))
+
+  logpprop=logverosaMUSA(aalpha,WW,deltaprop,ttheta,yT,TT,f)-0.5*(log(deltaprop)+log(d-deltaprop))
+
+  logprob=logpprop+log( dunif( ddelta, max(0,deltaprop-u1), min(d,deltaprop+u1) ) )-( logp+log( dunif( deltaprop, max(0,ddelta-u1), min(d,ddelta+u1) ) ) )
+
+  prob<-min(c(1,exp(logprob)))
+
+  u=runif(1,0,1)
+
+  if(u<prob){
+
+    bprox=deltaprop
+
+    rejei=1
+
+
+  }else{
+
+    bprox=ddelta
+
+    rejei=0;
+
+  }
+
+
+
+  res=list(bprox,rejei)
+  res
+
+}
+########################################################################
+amostrarthetaMUSA=function(ttheta,ddelta,WW,aalpha,yT,nn,TT,u1,f){
+
+
+  thetaprop=runif(1,max(0,ttheta-u1),min(theta+u1,pi))
+
+  logp=logverosaMUSA(aalpha,WW,ddelta,ttheta,yT,TT,f)-0.5*(log(ttheta)+log(pi-ttheta))
+
+  logpprop=logverosaMUSA(aalpha,WW,ddelta,thetaprop,yT,TT,f)-0.5*(log(thetaprop)+log(pi-thetaprop))
+
+  logprob=logpprop+log( dunif( ttheta, max(0,thetaprop-u1), min(pi,thetaprop+u1) ) )-( logp+log( dunif( thetaprop, max(0,ttheta-u1), min(pi,ttheta+u1) ) ) )
+
+  prob<-min(c(1,exp(logprob)))
+
+  u=runif(1,0,1)
+
+  if(u<prob){
+
+    bprox=thetaprop
+
+    rejei=1
+
+
+  }else{
+
+    bprox=ttheta
+
+    rejei=0;
+
+  }
+
+
+
+  res=list(bprox,rejei)
+  res
+
+}
+
+
+
+###################### Goel sazonalidade ###################
+
+
+######################################################
+logverosaGOEL=function(ggamma,eeta,ddelta,ff,ttheta,WW,ZZ,FF,yT,TT){
+
+  ffalpha=FF%*%eeta
+  zzbeta=ZZ%*%ggamma
+  aalpha=exp(FF%*%eeta)
+  bbeta=exp(ZZ%*%ggamma)
+
+  suma=0
+
+  for(i in 1:ncol(yT)){
+
+
+    res=sum(log(exp(WW[i,]+ffalpha[i,]+zzbeta[i,]-bbeta[i,]*yT[,i]^(aalpha[i,])+(aalpha[i,]-1)*log(yT[,i]) )-ddelta*2*pi*ff*sin(2*pi*ff*yT[,i]+ttheta)),na.rm =T)
+
+    suma=suma+res
+  }
+
+  res1=suma-sum( exp(WW)*( 1-exp(-bbeta*TT^( aalpha ) ) )+ddelta*cos(2*pi*ff*TT+ttheta) )
+  res1
+
+}
+#############################################################
+GG1=function(ggamma,eeta,ddelta,ff,ttheta,WW,ZZ,FF,yT,TT){
+
+  ffalpha=FF%*%eeta
+  zzbeta=ZZ%*%ggamma
+  aalpha=exp(FF%*%eeta)
+  bbeta=exp(ZZ%*%ggamma)
+
+  suma=0
+
+  for(i in 1:ncol(yT)){
+
+
+    res=sum(log(exp(WW[i,]+ffalpha[i,]+zzbeta[i,]-bbeta[i,]*yT[,i]^(aalpha[i,])+(aalpha[i,]-1)*log(yT[,i]) )-ddelta*2*pi*ff*sin(2*pi*ff*yT[,i]+ttheta)),na.rm =T)
+
+    suma=suma+res
+  }
+
+  res1=suma-sum( exp(WW)*( 1-exp(-bbeta*TT^( aalpha ) ) ) )
+  res1
+
+
+
+}
+#############################################################
+GG2=function(ggamma,eeta,ddelta,ff,ttheta,WW,ZZ,FF,yT,TT){
+
+  ffalpha=FF%*%eeta
+  zzbeta=ZZ%*%ggamma
+  aalpha=exp(FF%*%eeta)
+  bbeta=exp(ZZ%*%ggamma)
+
+  suma=0
+
+  for(i in 1:ncol(yT)){
+
+
+    res=sum(log(exp(WW[i,]+ffalpha[i,]+zzbeta[i,]-bbeta[i,]*yT[,i]^(aalpha[i,])+(aalpha[i,]-1)*log(yT[,i]) )-ddelta*2*pi*ff*sin(2*pi*ff*yT[,i]+ttheta)),na.rm =T)
+
+    suma=suma+res
+  }
+
+  res1=suma-sum( ddelta*cos(2*pi*ff*TT+ttheta) )
+  res1
+
+
+}
+###########################################
+amostrarthetaGOEL=function(ggamma,eeta,ddelta,ff,ttheta,WW,ZZ,FF,yT,TT,u1){
+
+  thetaprop=runif(1,max(0,ttheta-u1),min(ttheta+u1,2*pi))
+
+  logp=GG2(ggamma,eeta,ddelta,ff,ttheta,WW,ZZ,FF,yT,TT)-0.5*(log(ttheta)+log(2*pi-ttheta))
+
+  logpprop=GG2(ggamma,eeta,ddelta,ff,thetaprop,WW,ZZ,FF,yT,TT)-0.5*(log(thetaprop)+log(2*pi-thetaprop))
+
+  logprob=logpprop+log( dunif( ttheta, max(0,thetaprop-u1), min(2*pi,thetaprop+u1) ) )-( logp+log( dunif( thetaprop, max(0,ttheta-u1), min(2*pi,ttheta+u1) ) ) )
+
+  prob<-min(c(1,exp(logprob)))
+
+  u=runif(1,0,1)
+
+  if(u<prob){
+
+    bprox=thetaprop
+
+    rejei=1
+
+
+  }else{
+
+    bprox=ttheta
+
+    rejei=0;
+
+  }
+
+
+
+  res=list(bprox,rejei)
+  res
+
+}
+#############################################################
+amostrardeltaGOEL=function(ggamma,eeta,ddelta,ff,ttheta,WW,ZZ,FF,yT,TT,u1,d){
+
+
+  deltaprop=runif(1,max(0,ddelta-u1),min(ddelta+u1,d))
+  aalpha=exp(FF%*%eeta)
+  bbeta=exp(ZZ%*%ggamma)
+
+  tema1=exp(WW+FF%*%eeta+ZZ%*%ggamma-bbeta*(TT^aalpha)+(aalpha-1)*log(TT))
+  tema1=ifelse(tema1<=(deltaprop*2*pi*ff),1,0)
+  tema2=exp(WW+FF%*%eeta+ZZ%*%ggamma-bbeta*(as.matrix(yT[1,])^aalpha)+(aalpha-1)*log( as.matrix(yT[1,]) ))
+  tema2=ifelse(tema2<=(deltaprop*2*pi*ff),1,0)
+
+
+  if(sum(tema1+tema2)>=1){
+    return(list(ddelta,0))
+  }else{
+
+  }
+
+
+  logp=GG2(ggamma,eeta,ddelta,ff,ttheta,WW,ZZ,FF,yT,TT)-0.5*(log(ddelta)+log(d-ddelta))
+
+  logpprop=GG2(ggamma,eeta,deltaprop,ff,ttheta,WW,ZZ,FF,yT,TT)-0.5*(log(deltaprop)+log(d-deltaprop))
+
+  logprob=logpprop+log( dunif( ddelta, max(0,deltaprop-u1), min(d,deltaprop+u1) ) )-( logp+log( dunif( deltaprop, max(0,ddelta-u1), min(d,ddelta+u1) ) ) )
+
+  prob<-min(c(1,exp(logprob)))
+
+  u=runif(1,0,1)
+
+  if(u<prob){
+
+    bprox=deltaprop
+
+    rejei=1
+
+
+  }else{
+
+    bprox=ddelta
+
+    rejei=0;
+
+  }
+
+
+
+  res=list(bprox,rejei)
+  res
+}
+#############################################################
+amostrarfGOEL=function(ggamma,eeta,ddelta,ff,ttheta,WW,ZZ,FF,yT,TT,u1,a,b){
+
+
+  fprop=runif(1,max(a,ff-u1),min(ff+u1,b))
+
+  logp=GG2(ggamma,eeta,ddelta,ff,ttheta,WW,ZZ,FF,yT,TT)-0.5*(log(ff-a)+log(b-ff))
+
+  logpprop=GG2(ggamma,eeta,ddelta,fprop,ttheta,WW,ZZ,FF,yT,TT)-0.5*(log(fprop-a)+log(b-fprop))
+
+  logprob=logpprop+log( dunif( ff, max(a,fprop-u1), min(b,fprop+u1) ) )-( logp+log( dunif( fprop, max(a,ff-u1), min(b,ff+u1) ) ) )
+
+  prob<-min(c(1,exp(logprob)))
+
+  u=runif(1,0,1)
+
+  if(u<prob){
+
+    bprox=fprop
+
+    rejei=1
+
+
+  }else{
+
+    bprox=ff
+
+    rejei=0
+
+  }
+
+
+
+  res=list(bprox,rejei)
+  res
+
+}
+###############################################
+
+######################################################
+amostrarWsaGOEL=function(ggamma,eeta,ddelta,ff,ttheta,WW,ZZ,FF,yT,TT,bb,vv,loca,u1,XX,PPs){
+
+  n=nrow(WW)
+  WWprop=as.matrix(MASS::mvrnorm(1,WW,u1*diag(1,n)))
+  aalpha=exp(FF%*%eeta)
+  bbeta=exp(ZZ%*%ggamma)
+
+  tema1=exp(WWprop+FF%*%eeta+ZZ%*%ggamma-bbeta*(TT^aalpha)+(aalpha-1)*log(TT))
+  tema1=ifelse(tema1<=(ddelta*2*pi*ff),1,0)
+  tema2=exp(WWprop+FF%*%eeta+ZZ%*%ggamma-bbeta*(as.matrix(yT[1,])^aalpha)+(aalpha-1)*log( as.matrix(yT[1,]) ))
+  tema2=ifelse(tema2<=(ddelta*2*pi*ff),1,0)
+
+  if(sum(tema1+tema2)>=1){
+    return(list(WW,0))
+  }else{
+
+  }
+
+
+  SSig=gSigma(bb,vv,loca)
+
+  postWW=GG1(ggamma,eeta,ddelta,ff,ttheta,WW,ZZ,FF,yT,TT)-0.5*t(WW-XX%*%PPs)%*%solve(SSig)%*%(WW-XX%*%PPs)
+  postWWprop=GG1(ggamma,eeta,ddelta,ff,ttheta,WWprop,ZZ,FF,yT,TT)-0.5*t(WWprop-XX%*%PPs)%*%solve(SSig)%*%(WWprop-XX%*%PPs)
+
+  prob=min(exp((postWWprop)-(postWW)),1)
+
+
+  u=runif(1,0,1)
+
+  if(u<prob){
+
+    Wprox=WWprop
+
+    rejei=1
+
+
+  }else{
+
+    Wprox=WW
+    rejei=0
+  }
+
+
+
+
+
+  res=as.matrix(Wprox)
+  res=list(Wprox,rejei)
+  res
+
+}
+##############################################
+amostrargamaGOELSA=function(ggamma,eeta,ddelta,ff,ttheta,WW,ZZ,FF,yT,TT,A,B,loca,u1){
+
+
+  ggamaprop=as.matrix(MASS::mvrnorm(1,ggamma,u1*solve(t(ZZ)%*%ZZ)))
+
+  aalpha=exp(FF%*%eeta)
+  bbeta=exp(ZZ%*%ggamaprop)
+
+  tema1=exp(WW+FF%*%eeta+ZZ%*%ggamaprop-bbeta*(TT^aalpha)+(aalpha-1)*log(TT))
+  tema2=exp(WW+FF%*%eeta+ZZ%*%ggamaprop-bbeta*(as.matrix(yT[1,])^aalpha)+(aalpha-1)*log(as.matrix(yT[1,])))
+
+
+  tema1=ifelse(tema1<=(delta*2*pi*ff),1,0)
+  tema2=ifelse(tema2<=(delta*2*pi*ff),1,0)
+
+  if(sum(tema1+tema2)>=1){
+    return(list(ggamma,0))
+  }else{
+
+  }
+
+
+  pgama=GG1(ggamma,eeta,ddelta,ff,ttheta,WW,ZZ,FF,yT,TT)-0.5*t(ggamma-A)%*%solve(B)%*%(ggamma-A)
+  pgamaprop=GG1(ggamaprop,eeta,ddelta,ff,ttheta,WW,ZZ,FF,yT,TT)-0.5*t(ggamaprop-A)%*%solve(B)%*%(ggamaprop-A)
+
+
+  logprob=pgamaprop-pgama
+
+  probac<-min(c(1,exp(logprob)))
+
+  u<-runif(1)
+
+  if(u<probac){
+    res=ggamaprop
+    rejei=1
+
+
+  }
+  else{
+    res=ggamma
+    rejei=0
+  }
+
+  res=list(res,rejei)
+  res
+
+}
+#########################
+amostraretaGOELSA=function(ggamma,eeta,ddelta,ff,ttheta,WW,ZZ,FF,yT,TT,A,B,loca,u1){
+
+
+  etaprop=as.matrix(MASS::mvrnorm(1,eeta,u1*solve(t(FF)%*%FF)))
+
+  aalpha=exp(FF%*%etaprop)
+  bbeta=exp(ZZ%*%ggamma)
+
+  tema1=exp(WW+FF%*%etaprop+ZZ%*%ggamma-bbeta*(TT^aalpha)+(aalpha-1)*log(TT))
+  tema1=ifelse(tema1<=(ddelta*2*pi*ff),1,0)
+  tema2=exp(WW+FF%*%etaprop+ZZ%*%ggamma-bbeta*(as.matrix(yT[1,])^aalpha)+(aalpha-1)*log( as.matrix(yT[1,]) ))
+  tema2=ifelse(tema2<=(ddelta*2*pi*ff),1,0)
+
+  if(sum(tema1+tema2)>=1){
+    return(list(eeta,0))
+  }else{
+
+  }
+
+
+  pgama=GG1(ggamma,eeta,ddelta,ff,ttheta,WW,ZZ,FF,yT,TT)-0.5*t(eeta-A)%*%solve(B)%*%(eeta-A)
+  pgamaprop=GG1(ggamma,etaprop,ddelta,ff,ttheta,WW,ZZ,FF,yT,TT)-0.5*t(etaprop-A)%*%solve(B)%*%(etaprop-A)
+
+
+  logprob=pgamaprop-pgama
+
+  probac<-min(c(1,exp(logprob)))
+
+  u<-runif(1)
+
+  if(u<probac){
+    res=etaprop
+    rejei=1
+
+
+  }
+  else{
+    res=eeta
+    rejei=0
+  }
+
+  res=list(res,rejei)
+  res
+
+}
+
+######################### MUSA SA###########
+
+amostrarfMUSA=function(ttheta,ddelta,WW,aalpha,yT,nn,TT,u1,a,b,ff){
+
+  fprop=runif(1,max(a,ff-u1),min(ff+u1,b))
+
+  logp=logverosaMUSA(aalpha,WW,ddelta,ttheta,yT,TT,ff)-0.5*(log(ff-a)+log(b-ff))
+
+  logpprop=logverosaMUSA(aalpha,WW,ddelta,ttheta,yT,TT,fprop)-0.5*(log(fprop-a)+log(b-fprop))
+
+  logprob=logpprop+log( dunif( ff, max(a,fprop-u1), min(b,fprop+u1) ) )-( logp+log( dunif( fprop, max(a,ff-u1), min(b,ff+u1) ) ) )
+
+  prob<-min(c(1,exp(logprob)))
+
+  u=runif(1,0,1)
+
+  if(u<prob){
+
+    bprox=fprop
+
+    rejei=1
+
+
+  }else{
+
+    bprox=ff
+
+    rejei=0;
+
+  }
+
+
+
+  res=list(bprox,rejei)
+  res
+
+}
+################################
+########################################################################
+amostrarthetaMUSASA=function(ttheta,ddelta,WW,aalpha,yT,nn,TT,u1,f){
+
+
+  thetaprop=runif(1,max(0,ttheta-u1),min(ttheta+u1,2*pi))
+
+  logp=logverosaMUSA(aalpha,WW,ddelta,ttheta,yT,TT,f)-0.5*(log(ttheta)+log(2*pi-ttheta))
+
+  logpprop=logverosaMUSA(aalpha,WW,ddelta,thetaprop,yT,TT,f)-0.5*(log(thetaprop)+log(2*pi-thetaprop))
+
+  logprob=logpprop+log( dunif( ttheta, max(0,thetaprop-u1), min(2*pi,thetaprop+u1) ) )-( logp+log( dunif( thetaprop, max(0,ttheta-u1), min(2*pi,ttheta+u1) ) ) )
+
+  prob<-min(c(1,exp(logprob)))
+
+  u=runif(1,0,1)
+
+  if(u<prob){
+
+    bprox=thetaprop
+
+    rejei=1
+
+
+  }else{
+
+    bprox=ttheta
+
+    rejei=0;
+
+  }
+
+
+
+  res=list(bprox,rejei)
+  res
+
+}

@@ -95,11 +95,11 @@ MainGoel<-function(data,sites,iter=410000,bar=400000){
         NN[1,e]<-rpois(1,theta[e,1]*(1-pgamma(beta[e,1]*t1^alpha[e,1],1,1)))
       }
 
-      temp=amostrargama(lgama,leta,data,Z,M,NN,Tt,nj,AA1,BB1,SU1)
+      temp=amostrargamaGOEL(lgama,leta,data,Z,M,NN,Tt,nj,AA1,BB1,SU1)
       lgama=temp[[1]]
       MgamaT=c(MgamaT,temp[[2]])
 
-      temp=amostrareta(lgama,leta,data,Z,M,NN,Tt,nj,AA1,BB1,SU2)
+      temp=amostraretaGOEL(lgama,leta,data,Z,M,NN,Tt,nj,AA1,BB1,SU2)
       leta=temp[[1]]
       MetaT=c(MetaT,temp[[2]])
 
@@ -118,7 +118,7 @@ MainGoel<-function(data,sites,iter=410000,bar=400000){
       W=as.matrix(temp[[1]])
       MWT=c(MWT,temp[[2]])
 
-      temp=amostrarPsi(W,X,Psi,V,MM1,SU6,sites)
+      temp=amostrarPsiGOEL(W,X,Psi,V,MM1,SU6,sites)
       Psi=as.matrix(temp[[1]])
       MPsiT=rbind(MPsiT,temp[[2]])
 
@@ -148,12 +148,12 @@ MainGoel<-function(data,sites,iter=410000,bar=400000){
       }
 
 
-      temp=amostrargama(lgama,leta,data,Z,M,NN,Tt,nj,AA1,BB1,SU1)
+      temp=amostrargamaGOEL(lgama,leta,data,Z,M,NN,Tt,nj,AA1,BB1,SU1)
       lgama=temp[[1]]
       Mgama=rbind(Mgama,t(lgama))
       MgamaT=c(MgamaT,temp[[2]])
 
-      temp=amostrareta(lgama,leta,data,Z,M,NN,Tt,nj,AA1,BB1,SU2)
+      temp=amostraretaGOEL(lgama,leta,data,Z,M,NN,Tt,nj,AA1,BB1,SU2)
       leta=temp[[1]]
       Meta=rbind(Meta,t(leta))
       MetaT=c(MetaT,temp[[2]])
@@ -175,7 +175,7 @@ MainGoel<-function(data,sites,iter=410000,bar=400000){
       MW=rbind(MW,t(W))
       MWT=c(MWT,temp[[2]])
 
-      temp=amostrarPsi(W,X,Psi,V,MM1,SU6,sites)
+      temp=amostrarPsiGOEL(W,X,Psi,V,MM1,SU6,sites)
       Psi=as.matrix(temp[[1]])
       MPsiT=c(MPsiT,temp[[2]])
       MPsi=rbind(MPsi,t(Psi))
@@ -185,4 +185,5 @@ MainGoel<-function(data,sites,iter=410000,bar=400000){
     }
 
   }
+  return(list(Mgama,MgamaT,Meta,MetaT,Mv,Mb,MbT,MW,MWT,MPsi,MPsiT))
 }

@@ -194,4 +194,5 @@ for(j in 1:iter){
   }
 
 }
+return(resul)
 }
